@@ -51,6 +51,12 @@
       },
       "rate_up": {
         "name": "Upload speed"
+      },
+      "voicemail_new": {
+        "name": "New voicemails"
+      },
+      "voicemail_total": {
+        "name": "Voicemails"
       }
     },
     "switch": {

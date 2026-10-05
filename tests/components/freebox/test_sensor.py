@@ -3,6 +3,7 @@
 from copy import deepcopy
 from unittest.mock import Mock
 
+from freebox_api.exceptions import HttpRequestError
 from freezegun.api import FrozenDateTimeFactory
 
 from homeassistant.components.freebox import SCAN_INTERVAL
@@ -11,6 +12,7 @@ from homeassistant.core import HomeAssistant
 
 from .common import setup_platform
 from .const import (
+    DATA_CALL_GET_VOICEMAILS,
     DATA_CONNECTION_GET_STATUS,
     DATA_HOME_GET_NODES,
     DATA_STORAGE_GET_DISKS,
@@ -59,6 +61,48 @@ async def test_call(
     # To execute the save
     await hass.async_block_till_done()
     assert hass.states.get("sensor.freebox_server_r2_missed_calls").state == "0"
+
+
+async def test_voicemail(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, router: Mock
+) -> None:
+    """Test voicemail sensors."""
+    await setup_platform(hass, SENSOR_DOMAIN)
+
+    assert hass.states.get("sensor.freebox_server_r2_new_voicemails").state == "2"
+    assert hass.states.get("sensor.freebox_server_r2_voicemails").state == "3"
+
+    # Simulate we listened to a voicemail
+    data_call_get_voicemails_changed = deepcopy(DATA_CALL_GET_VOICEMAILS)
+    data_call_get_voicemails_changed[0]["read"] = True
+    router().call.get_voicemails.return_value = data_call_get_voicemails_changed
+    # Simulate an update
+    freezer.tick(SCAN_INTERVAL)
+    async_fire_time_changed(hass)
+    # To execute the save
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.freebox_server_r2_new_voicemails").state == "1"
+    assert hass.states.get("sensor.freebox_server_r2_voicemails").state == "3"
+
+    # Simulate we deleted all voicemails
+    router().call.get_voicemails.return_value = []
+    freezer.tick(SCAN_INTERVAL)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.freebox_server_r2_new_voicemails").state == "0"
+    assert hass.states.get("sensor.freebox_server_r2_voicemails").state == "0"
+
+
+async def test_voicemail_not_supported(hass: HomeAssistant, router: Mock) -> None:
+    """Test voicemail sensors are not created when the API does not support it."""
+    router().call.get_voicemails.side_effect = HttpRequestError(
+        "Request failed (APIResponse: some unknown error)"
+    )
+    await setup_platform(hass, SENSOR_DOMAIN)
+
+    assert hass.states.get("sensor.freebox_server_r2_new_voicemails") is None
+    assert hass.states.get("sensor.freebox_server_r2_voicemails") is None
+    assert router().call.get_voicemails.call_count == 1
 
 
 async def test_disk(

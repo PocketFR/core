@@ -1,5 +1,7 @@
 """Support for Freebox devices (Freebox v6 and Freebox mini 4K)."""
 
+from collections.abc import Callable
+from dataclasses import dataclass
 import logging
 from typing import Any, override
 
@@ -53,6 +55,33 @@ CALL_SENSORS: tuple[SensorEntityDescription, ...] = (
         native_unit_of_measurement="calls",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+)
+
+
+@dataclass(frozen=True, kw_only=True)
+class FreeboxVoicemailSensorEntityDescription(SensorEntityDescription):
+    """Describes a Freebox voicemail sensor."""
+
+    value_fn: Callable[[list[dict[str, Any]]], int]
+
+
+VOICEMAIL_SENSORS: tuple[FreeboxVoicemailSensorEntityDescription, ...] = (
+    FreeboxVoicemailSensorEntityDescription(
+        key="voicemail_new",
+        translation_key="voicemail_new",
+        native_unit_of_measurement="messages",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda voicemails: sum(
+            1 for voicemail in voicemails if not voicemail["read"]
+        ),
+    ),
+    FreeboxVoicemailSensorEntityDescription(
+        key="voicemail_total",
+        translation_key="voicemail_total",
+        native_unit_of_measurement="messages",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=len,
     ),
 )
 
@@ -122,6 +151,11 @@ async def async_setup_entry(
     entities.extend(
         [FreeboxCallSensor(router, description) for description in CALL_SENSORS]
     )
+    if router.supports_voicemail:
+        entities.extend(
+            FreeboxVoicemailSensor(router, description)
+            for description in VOICEMAIL_SENSORS
+        )
 
     _LOGGER.debug("%s - %s - %s disk(s)", router.name, router.mac, len(router.disks))
     entities.extend(
@@ -221,6 +255,20 @@ class FreeboxCallSensor(FreeboxSensor):
             dt_util.utc_from_timestamp(call["datetime"]).isoformat(): call["name"]
             for call in self._call_list_for_type
         }
+
+
+class FreeboxVoicemailSensor(FreeboxSensor):
+    """Representation of a Freebox voicemail sensor."""
+
+    entity_description: FreeboxVoicemailSensorEntityDescription
+
+    @callback
+    @override
+    def async_update_state(self) -> None:
+        """Update the Freebox voicemail sensor."""
+        self._attr_native_value = self.entity_description.value_fn(
+            self._router.voicemail_list
+        )
 
 
 class FreeboxDiskSensor(FreeboxSensor):

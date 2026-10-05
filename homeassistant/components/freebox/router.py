@@ -167,6 +167,8 @@ class FreeboxRouter:
         self.sensors_fan_names: dict[str, str] = {}
         self.sensors_connection: dict[str, float] = {}
         self.call_list: list[dict[str, Any]] = []
+        self.supports_voicemail = True
+        self.voicemail_list: list[dict[str, Any]] = []
         self.home_granted = True
         self.home_devices: dict[str, Any] = {}
         self.listeners: list[Callable[[], None]] = []
@@ -253,10 +255,25 @@ class FreeboxRouter:
 
         self.call_list = await self._api.call.get_calls_log()
 
+        await self._update_voicemail_sensors()
         await self._update_disks_sensors()
         await self._update_raids_sensors()
 
         async_dispatcher_send(self.hass, self.signal_sensor_update)
+
+    async def _update_voicemail_sensors(self) -> None:
+        """Update Freebox voicemails."""
+        if not self.supports_voicemail:
+            return
+
+        try:
+            self.voicemail_list = await self._api.call.get_voicemails() or []
+        except HttpRequestError:
+            self.supports_voicemail = False
+            _LOGGER.warning(
+                "Router %s API does not support voicemail",
+                self.name,
+            )
 
     async def _update_disks_sensors(self) -> None:
         """Update Freebox disks."""

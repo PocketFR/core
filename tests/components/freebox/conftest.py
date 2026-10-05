@@ -11,6 +11,7 @@ from homeassistant.helpers import device_registry as dr
 
 from .const import (
     DATA_CALL_GET_CALLS_LOG,
+    DATA_CALL_GET_VOICEMAILS,
     DATA_CONNECTION_GET_STATUS,
     DATA_HOME_GET_NODES,
     DATA_HOME_PIR_GET_VALUE,
@@ -80,6 +81,7 @@ def mock_router(mock_device_registry_devices):
         )
         # sensor
         instance.call.get_calls_log = AsyncMock(return_value=DATA_CALL_GET_CALLS_LOG)
+        instance.call.get_voicemails = AsyncMock(return_value=DATA_CALL_GET_VOICEMAILS)
         instance.storage.get_disks = AsyncMock(return_value=DATA_STORAGE_GET_DISKS)
         instance.storage.get_raids = AsyncMock(return_value=DATA_STORAGE_GET_RAIDS)
         instance.connection.get_status = AsyncMock(

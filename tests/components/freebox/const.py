@@ -14,6 +14,7 @@ DATA_CONNECTION_GET_STATUS = load_json_object_fixture(
 )
 
 DATA_CALL_GET_CALLS_LOG = load_json_array_fixture("freebox/call_get_calls_log.json")
+DATA_CALL_GET_VOICEMAILS = load_json_array_fixture("freebox/call_get_voicemails.json")
 
 DATA_STORAGE_GET_DISKS = load_json_array_fixture("freebox/storage_get_disks.json")
 

@@ -12,6 +12,12 @@
       },
       "rate_up": {
         "default": "mdi:upload-network"
+      },
+      "voicemail_new": {
+        "default": "mdi:voicemail"
+      },
+      "voicemail_total": {
+        "default": "mdi:voicemail"
       }
     },
     "switch": {
