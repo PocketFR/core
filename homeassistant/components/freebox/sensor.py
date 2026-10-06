@@ -72,6 +72,7 @@ VOICEMAIL_SENSORS: tuple[FreeboxVoicemailSensorEntityDescription, ...] = (
         translation_key="voicemail_new",
         native_unit_of_measurement="messages",
         state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda voicemails: sum(
             1 for voicemail in voicemails if not voicemail["read"]
         ),
@@ -81,6 +82,7 @@ VOICEMAIL_SENSORS: tuple[FreeboxVoicemailSensorEntityDescription, ...] = (
         translation_key="voicemail_total",
         native_unit_of_measurement="messages",
         state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=len,
     ),
 )
